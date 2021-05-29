@@ -81,11 +81,11 @@ public:
     QModelIndex incrementIndex(const QModelIndex& index) const;
     QModelIndex decrementIndex(const QModelIndex& index) const;
     QModelIndex createIndex(int row, int column) const;
-    void createIfNeeded();
+    void setUp();
     void showThumbnail(int row);
     void refreshThumbnails();
     Mlt::Playlist* playlist() { return m_playlist; }
-    void setPlaylist(Mlt::Playlist& playlist);
+    void setPlaylist(Mlt::Playlist* playlist);
     void setInOut(int row, int in, int out);
 
     ViewMode viewMode() const;

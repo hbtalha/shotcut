@@ -632,7 +632,7 @@ void PlaylistModel::load()
 
 void PlaylistModel::append(Mlt::Producer& producer, bool emitModified)
 {
-    createIfNeeded();
+    setUp();
     int count = m_playlist->count();
     int in = producer.get_in();
     int out = producer.get_out();
@@ -648,7 +648,7 @@ void PlaylistModel::append(Mlt::Producer& producer, bool emitModified)
 
 void PlaylistModel::insert(Mlt::Producer& producer, int row)
 {
-    createIfNeeded();
+    setUp();
     int in = producer.get_in();
     int out = producer.get_out();
     producer.set_in_and_out(0, producer.get_length() - 1);
@@ -703,7 +703,7 @@ void PlaylistModel::updateThumbnails(int row)
 
 void PlaylistModel::appendBlank(int frames)
 {
-    createIfNeeded();
+    setUp();
     int count = m_playlist->count();
     beginInsertRows(QModelIndex(), count, count);
     m_playlist->blank(frames - 1);
@@ -713,7 +713,7 @@ void PlaylistModel::appendBlank(int frames)
 
 void PlaylistModel::insertBlank(int frames, int row)
 {
-    createIfNeeded();
+    setUp();
     beginInsertRows(QModelIndex(), row, row);
     m_playlist->insert_blank(row, frames - 1);
     endInsertRows();
@@ -724,8 +724,6 @@ void PlaylistModel::close()
 {
     if (!m_playlist) return;
     clear();
-    delete m_playlist;
-    m_playlist = 0;
     emit closed();
 }
 
@@ -738,14 +736,11 @@ void PlaylistModel::move(int from, int to)
     emit modified();
 }
 
-void PlaylistModel::createIfNeeded()
+void PlaylistModel::setUp()
 {
-    if (!m_playlist) {
-        m_playlist = new Mlt::Playlist(MLT.profile());
-        // do not let opening a clip change the profile!
-        MLT.profile().set_explicit(true);
-        emit created();
-    }
+    // do not let opening a clip change the profile!
+    MLT.profile().set_explicit(true);
+    emit created();
 }
 
 void PlaylistModel::showThumbnail(int row)
@@ -767,23 +762,12 @@ void PlaylistModel::refreshThumbnails()
     }
 }
 
-void PlaylistModel::setPlaylist(Mlt::Playlist& playlist)
+void PlaylistModel::setPlaylist(Mlt::Playlist* playlist)
 {
-    if (playlist.is_valid()) {
-        if (m_playlist) {
-            if (rowCount()) {
-                beginRemoveRows(QModelIndex(), 0, rowCount() - 1);
-                m_playlist->clear();
-                endRemoveRows();
-            }
-            delete m_playlist;
-        }
-        m_playlist = new Mlt::Playlist(playlist);
-        if (!m_playlist->is_valid()) {
-            delete m_playlist;
-            m_playlist = 0;
-            return;
-        }
+    if (playlist->is_valid()) {
+        beginResetModel();
+        m_playlist = playlist;
+        endResetModel();
         if (m_playlist->count() > 0) {
             beginInsertRows(QModelIndex(), 0, m_playlist->count() - 1);
             endInsertRows();

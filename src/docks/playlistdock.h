@@ -145,6 +145,16 @@ private slots:
 
     void on_addFilesButton_clicked();
 
+    void on_playlistComboBox_currentIndexChanged(int index);
+
+    void on_playlistMenu_clicked();
+
+    void on_actionAddNewPlaylist_triggered();
+
+    void on_actionRenamePlaylist_triggered();
+
+    void on_actionDeletePlaylist_triggered();
+
 protected:
     void keyPressEvent(QKeyEvent* event);
     void keyReleaseEvent(QKeyEvent* event);
@@ -154,12 +164,15 @@ private:
     void resetPlaylistIndex();
     void emitDataChanged(const QVector<int> &roles);
     void setPlaylistIndex(Mlt::Producer* producer, int row);
+    void addPlaylist(QString name);
 
     Ui::PlaylistDock *ui;
     QAbstractItemView *m_view;
     PlaylistIconView *m_iconsView;
     PlaylistModel m_model;
+    QVector<Mlt::Playlist*> m_playlists;
     int m_defaultRowHeight;
+    int m_playlistsCurrentIndex;
     QTimer m_inChangedTimer;
     QTimer m_outChangedTimer;
 };

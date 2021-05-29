@@ -40,6 +40,8 @@
 #include <QHeaderView>
 #include <QKeyEvent>
 #include <QDir>
+#include <QInputDialog>
+#include <QMessageBox>
 
 static const int kInOutChangedTimeoutMs = 100;
 
@@ -149,6 +151,8 @@ PlaylistDock::PlaylistDock(QWidget *parent) :
     ui->actionPlayAfterOpen->setChecked(Settings.playlistAutoplay());
 
     ui->stackedWidget->setCurrentIndex(0);
+
+    addPlaylist("Playlist 1");
 
     m_iconsView = new PlaylistIconView(this);
     ui->listView->parentWidget()->layout()->addWidget(m_iconsView);
@@ -635,6 +639,8 @@ void PlaylistDock::onPlaylistCreated()
     ui->removeButton->setEnabled(true);
     ui->updateButton->setEnabled(false);
     ui->stackedWidget->setCurrentIndex(1);
+    ui->actionAddNewPlaylist->setEnabled(true);
+    ui->actionRenamePlaylist->setEnabled(true);
 }
 
 void PlaylistDock::onPlaylistLoaded()
@@ -661,6 +667,8 @@ void PlaylistDock::onPlaylistCleared()
 void PlaylistDock::onPlaylistClosed()
 {
     ui->addButton->setDisabled(true);
+    ui->actionAddNewPlaylist->setEnabled(false);
+    ui->actionRenamePlaylist->setEnabled(false);
 }
 
 void PlaylistDock::onDropped(const QMimeData *data, int row)
@@ -1136,5 +1144,82 @@ void PlaylistDock::on_addFilesButton_clicked()
         }
         mimeData.setUrls(urls);
         onDropped(&mimeData, m_view->currentIndex().row() + 1);
+    }
+}
+
+void PlaylistDock::on_playlistMenu_clicked()
+{
+    QPoint pos = ui->playlistMenu->mapToParent(QPoint(0, 0));
+    QMenu menu(this);
+    menu.addAction(ui->actionAddNewPlaylist);
+    menu.addAction(ui->actionRenamePlaylist);
+    menu.addAction(ui->actionDeletePlaylist);
+    menu.exec(mapToGlobal(pos));
+}
+
+void PlaylistDock::on_actionAddNewPlaylist_triggered()
+{
+    static int playlistNumber = 2;
+    bool ok;
+    QString defautName = "Playlist " + QString::number(playlistNumber);
+    QString name = QInputDialog::getText(this, " ", tr("Playlist Name:"), QLineEdit::Normal,
+                                         defautName, &ok);
+
+    if (ok) {
+        if(name == defautName || name.isEmpty()) {
+            ++playlistNumber;
+            addPlaylist(defautName);
+        } else {
+            addPlaylist(name);
+        }
+        ui->actionDeletePlaylist->setEnabled(true);
+    }
+}
+
+void PlaylistDock::addPlaylist(QString name)
+{
+    Mlt::Playlist* playlist = new Mlt::Playlist(MLT.profile());
+    m_playlists.append(playlist);
+    ui->playlistComboBox->addItem(name);
+}
+
+void PlaylistDock::on_playlistComboBox_currentIndexChanged(int index)
+{
+    m_model.setPlaylist(m_playlists.at(index));
+    m_playlistsCurrentIndex = index;
+}
+
+void PlaylistDock::on_actionRenamePlaylist_triggered()
+{
+    bool ok;
+    QString defautName = ui->playlistComboBox->currentText();
+    QString name = QInputDialog::getText(this, " ", tr("Playlist Name:"), QLineEdit::Normal,
+                                         defautName, &ok);
+
+    if (ok and name != defautName) {
+        ui->playlistComboBox->setItemText(m_playlistsCurrentIndex, name);
+    }
+}
+
+void PlaylistDock::on_actionDeletePlaylist_triggered()
+{
+    if (ui->playlistComboBox->count() > 1) {
+        QMessageBox dialog(QMessageBox::Information,
+                           qApp->applicationName(),
+                           tr("Are you sure you want to delete the playlist?"),
+                           QMessageBox::No | QMessageBox::Yes,
+                           this);
+        dialog.setDefaultButton(QMessageBox::Yes);
+        dialog.setEscapeButton(QMessageBox::No);
+        dialog.setWindowModality(QmlApplication::dialogModality());
+        if (dialog.exec() == QMessageBox::Yes) {
+            m_model.clear();
+            delete m_playlists.at(m_playlistsCurrentIndex);
+            m_playlists.remove(m_playlistsCurrentIndex);
+            ui->playlistComboBox->removeItem(m_playlistsCurrentIndex);
+            if (ui->playlistComboBox->count() == 1) {
+                ui->actionDeletePlaylist->setEnabled(false);
+            }
+        }
     }
 }

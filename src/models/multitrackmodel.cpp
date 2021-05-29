@@ -2754,7 +2754,7 @@ void MultitrackModel::removeTrack(int trackIndex)
 void MultitrackModel::retainPlaylist()
 {
     if (!MAIN.playlist())
-        MAIN.playlistDock()->model()->createIfNeeded();
+        MAIN.playlistDock()->model()->setUp();
     Mlt::Playlist playlist(*MAIN.playlist());
     playlist.set("id", kPlaylistTrackId);
     QString retain = QString("xml_retain %1").arg(kPlaylistTrackId);
@@ -2767,11 +2767,11 @@ void MultitrackModel::loadPlaylist()
     if (retainList.is_valid()) {
         Mlt::Playlist playlist((mlt_playlist) retainList.get_data(kPlaylistTrackId));
         if (playlist.is_valid() && playlist.type() == mlt_service_playlist_type) {
-            MAIN.playlistDock()->model()->setPlaylist(playlist);
+            MAIN.playlistDock()->model()->setPlaylist(&playlist);
         } else {
             playlist = (mlt_playlist) retainList.get_data(kLegacyPlaylistTrackId);
             if (playlist.is_valid() && playlist.type() == mlt_service_playlist_type)
-                MAIN.playlistDock()->model()->setPlaylist(playlist);
+                MAIN.playlistDock()->model()->setPlaylist(&playlist);
         }
     }
     retainPlaylist();

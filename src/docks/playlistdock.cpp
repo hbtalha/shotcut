@@ -1196,7 +1196,7 @@ void PlaylistDock::on_actionRenamePlaylist_triggered()
     QString name = QInputDialog::getText(this, " ", tr("Playlist Name:"), QLineEdit::Normal,
                                          defautName, &ok);
 
-    if (ok and name != defautName) {
+    if (ok and name != defautName && ! name.isEmpty()) {
         ui->playlistComboBox->setItemText(m_playlistsCurrentIndex, name);
     }
 }
